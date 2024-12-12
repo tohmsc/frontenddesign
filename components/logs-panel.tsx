@@ -31,93 +31,41 @@ export function LogsPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background/50 backdrop-blur-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Logs</span>
-          </div>
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Filter logs..." 
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-8 h-7 bg-muted/5 text-xs"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={clearLogs}
-            className="p-1.5 hover:bg-muted/10 rounded-md transition-colors text-muted-foreground hover:text-primary"
-            title="Clear logs"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 hover:bg-muted/10 rounded-md transition-colors text-muted-foreground hover:text-primary"
-            title={isCollapsed ? "Expand logs" : "Collapse logs"}
-          >
-            {isCollapsed ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </button>
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-black border border-white/[0.04] rounded-lg overflow-hidden">
+      <div className="h-full overflow-auto font-mono scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
+        <div className="p-2 pb-6 space-y-1 text-[10px] leading-relaxed">
+          {logs.length === 0 ? (
+            <div className="flex items-center justify-center min-h-[4rem] text-white/30">
+              No logs to display
+            </div>
+          ) : (
+            logs
+              .filter(log => 
+                !filter || 
+                log.message.toLowerCase().includes(filter.toLowerCase()) ||
+                log.type.toLowerCase().includes(filter.toLowerCase())
+              )
+              .map((log) => (
+                <div key={log.id} className="px-1 py-0.5 text-white/90 transition-opacity hover:opacity-100 rounded hover:bg-white/[0.02]">
+                  <span className="text-white/30 mr-2 tabular-nums">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                  <span className={cn(
+                    "font-medium",
+                    log.type === 'info' && "text-blue-400/90",
+                    log.type === 'success' && "text-emerald-400/90",
+                    log.type === 'warn' && "text-amber-400/90",
+                    log.type === 'error' && "text-rose-400/90"
+                  )}>
+                    [{log.type}]
+                  </span>
+                  {" "}
+                  <span className="text-white/70">{log.message}</span>
+                </div>
+              ))
+          )}
         </div>
       </div>
-
-      {/* Logs Content */}
-      <AnimatePresence initial={false}>
-        {!isCollapsed && (
-          <motion.div 
-            className="flex-1 p-3 overflow-auto font-mono"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="space-y-1 text-xs">
-              {logs.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground py-4">
-                  No logs to display
-                </div>
-              ) : (
-                logs
-                  .filter(log => 
-                    !filter || 
-                    log.message.toLowerCase().includes(filter.toLowerCase()) ||
-                    log.type.toLowerCase().includes(filter.toLowerCase())
-                  )
-                  .map((log) => (
-                    <div key={log.id} className="text-muted-foreground">
-                      <span className="text-muted-foreground/50 mr-2">
-                        {new Date(log.timestamp).toLocaleTimeString()}
-                      </span>
-                      <span className={cn(
-                        "font-medium",
-                        log.type === 'info' && "text-primary",
-                        log.type === 'success' && "text-green-500",
-                        log.type === 'warn' && "text-yellow-500",
-                        log.type === 'error' && "text-red-500"
-                      )}>
-                        [{log.type}]
-                      </span>
-                      {" "}
-                      {log.message}
-                    </div>
-                  ))
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 } 

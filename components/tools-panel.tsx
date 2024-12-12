@@ -66,56 +66,56 @@ function BrowserPanel() {
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-4">
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 bg-muted/10 rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-white/[0.04] rounded-lg p-1">
           <button 
             type="button"
-            className="p-1.5 hover:bg-white/10 rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 hover:bg-white/[0.08] rounded-md transition-colors disabled:opacity-50"
             disabled
             aria-label="Go back"
           >
-            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            <ChevronLeft className="h-4 w-4 text-white/40" />
           </button>
           <button 
             type="button"
-            className="p-1.5 hover:bg-white/10 rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 hover:bg-white/[0.08] rounded-md transition-colors disabled:opacity-50"
             disabled
             aria-label="Go forward"
           >
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 text-white/40" />
           </button>
           <button 
             type="button"
             onClick={handleRefresh}
             disabled={isLoading}
-            className="p-1.5 hover:bg-white/10 rounded-md transition-colors"
+            className="p-1.5 hover:bg-white/[0.08] rounded-md transition-colors"
             aria-label="Refresh page"
           >
             <RefreshCw className={cn(
-              "h-4 w-4 text-muted-foreground transition-all",
+              "h-4 w-4 text-white/40 transition-all",
               isLoading && "animate-spin"
             )} />
           </button>
         </div>
         <div className="flex-1 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Globe className="h-4 w-4 text-muted-foreground" />
+            <Globe className="h-4 w-4 text-zinc-400" />
           </div>
           <Input 
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Enter URL" 
-            className="pl-9 h-8 bg-muted/10 border-0 focus-visible:ring-1 focus-visible:ring-primary/20"
+            className="pl-9 h-8 bg-white border-0 focus-visible:ring-1 focus-visible:ring-zinc-200 text-zinc-900 placeholder:text-zinc-400"
           />
         </div>
       </div>
-      <div className="flex-1 min-h-0 rounded-lg border border-border/50 bg-muted/5 overflow-hidden">
+      <div className="flex-1 min-h-0 rounded-lg border border-white/[0.04] bg-white/[0.02] overflow-hidden">
         <div className="h-full flex items-center justify-center">
           <div className="text-center space-y-3 max-w-md mx-auto px-6">
-            <Globe className="h-12 w-12 text-muted-foreground/30 mx-auto" />
+            <Globe className="h-12 w-12 text-white/20 mx-auto" />
             <div>
-              <h3 className="text-lg font-semibold text-foreground/80 mb-1">Welcome to Browser Preview</h3>
-              <p className="text-sm text-muted-foreground">Enter a URL above to start browsing or choose from your recent pages below.</p>
+              <h3 className="text-lg font-semibold text-white/80 mb-1">Welcome to Browser Preview</h3>
+              <p className="text-sm text-white/40">Enter a URL above to start browsing or choose from your recent pages below.</p>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-6">
               {recentPages.map((page) => (
@@ -123,12 +123,12 @@ function BrowserPanel() {
                   key={page.url}
                   type="button"
                   onClick={() => setUrl(page.url)}
-                  className="p-4 rounded-lg bg-muted/5 hover:bg-muted/10 transition-colors text-left group"
+                  className="p-4 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] transition-colors text-left group"
                 >
-                  <div className="text-sm font-medium text-foreground/80 mb-1 group-hover:text-primary">
+                  <div className="text-sm font-medium text-white/80 mb-1 group-hover:text-white">
                     {page.title}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-white/40">
                     {page.url}
                   </div>
                 </button>
@@ -277,8 +277,8 @@ export function ToolsPanel() {
   const [activeTab, setActiveTab] = useState<string>(tabs[0].id)
 
   return (
-    <div className="h-full flex flex-col bg-background/95 backdrop-blur-xl">
-      <div className="border-b border-border/50">
+    <div className="h-full flex flex-col bg-zinc-900">
+      <div className="border-b border-white/[0.04]">
         <nav className="flex items-center w-full px-6" role="tablist">
           {tabs.map((tab) => {
             const Icon = tab.icon
@@ -294,14 +294,14 @@ export function ToolsPanel() {
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   "relative flex items-center gap-2.5 px-4 py-2.5 transition-all flex-1",
-                  "hover:text-foreground focus-visible:outline-none",
-                  isActive ? "text-foreground" : "text-muted-foreground"
+                  "hover:text-white/90 focus-visible:outline-none",
+                  isActive ? "text-white/90" : "text-white/40"
                 )}
               >
                 <div className="flex items-center gap-2 mx-auto">
                   <Icon className={cn(
                     "h-4 w-4 transition-colors",
-                    isActive ? "text-foreground" : "text-muted-foreground"
+                    isActive ? "text-white/90" : "text-white/40"
                   )} />
                   <span className="text-sm font-medium">
                     {tab.label}
@@ -310,7 +310,7 @@ export function ToolsPanel() {
                 {isActive && (
                   <motion.div
                     layoutId="active-tab"
-                    className="absolute left-0 right-0 -bottom-px h-[2px] bg-foreground"
+                    className="absolute left-0 right-0 -bottom-px h-[2px] bg-white/40"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.15 }}

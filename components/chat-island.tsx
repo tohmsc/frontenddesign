@@ -5,20 +5,52 @@ import { motion, AnimatePresence } from "framer-motion"
 import type { Variants } from "framer-motion"
 import { Brain, ChevronRight, Loader2, Check, Code, Bot, HelpCircle, Terminal, Settings2, Sparkles, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { create } from 'zustand'
+import { FamilyButton } from "@/components/ui/family-button"
+import { RainbowButton } from "@/components/ui/rainbow-button"
+
+function WindowsIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="3" y="3" width="6" height="6" rx="1" />
+      <rect x="15" y="3" width="6" height="6" rx="1" />
+      <rect x="3" y="15" width="6" height="6" rx="1" />
+      <rect x="15" y="15" width="6" height="6" rx="1" />
+    </svg>
+  )
+}
+
+interface StatusStore {
+  status: string
+  setStatus: (status: string) => void
+}
+
+export const useStatusStore = create<StatusStore>((set) => ({
+  status: 'Ready',
+  setStatus: (status) => set({ status }),
+}))
 
 interface Action {
   id: string
   text: string
-  status: 'loading' | 'complete' | 'error' | 'ready'
+  status: 'loading' | 'complete' | 'ready'
   description?: string
+  command?: string
   isExpanded?: boolean
   checked?: boolean
-  command?: string
 }
 
 interface Message {
   id: string
-  role: 'assistant' | 'user' | 'system' | 'action' | 'progress'
+  role: 'user' | 'assistant' | 'progress'
   content: string
   timestamp: string
   actions?: Action[]
@@ -33,20 +65,24 @@ const messageVariants: Variants = {
   initial: { 
     opacity: 0,
     y: 10,
+    scale: 0.95
   },
   animate: { 
     opacity: 1,
     y: 0,
+    scale: 1,
     transition: {
-      duration: 0.2,
-      ease: [0.23, 1, 0.32, 1]
+      type: "spring",
+      stiffness: 400,
+      damping: 30
     }
   },
   exit: {
     opacity: 0,
     y: -10,
+    scale: 0.95,
     transition: {
-      duration: 0.15,
+      duration: 0.2,
       ease: [0.23, 1, 0.32, 1]
     }
   }
@@ -55,60 +91,41 @@ const messageVariants: Variants = {
 function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactElement {
   const [actions, setActions] = React.useState<Action[]>(message.actions || [])
 
-  const handleCompleteAction = React.useCallback((id: string) => {
-    setActions(prevActions => 
-      prevActions.map(action => 
-        action.id === id ? { ...action, checked: !action.checked } : action
-      )
-    )
-  }, [])
-
-  const handleExpandAction = React.useCallback((id: string) => {
-    setActions(prevActions =>
-      prevActions.map(action =>
-        action.id === id ? { ...action, isExpanded: !action.isExpanded } : action
-      )
-    )
-  }, [])
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={cn(
+        "relative group",
         message.role === 'assistant' && [
-          'px-12 py-5',
-          'bg-[#0A0A0A]',
+          'px-6 py-4',
+          'bg-black/40 backdrop-blur-xl',
           'border-b border-white/[0.03]',
           'mb-1'
         ],
         message.role === 'progress' && [
-          'px-12 py-3',
-          'bg-[#0A0A0A]',
+          'px-6 py-3',
+          'bg-black/40 backdrop-blur-xl',
           'border-b border-white/[0.03]',
           'mb-1'
-        ].join(' '),
-        message.role === 'action' && [
-          'px-12 py-3 mx-8 my-3',
-          'bg-[#0A0A0A]',
-          'rounded-lg',
-          'border border-white/[0.04]'
-        ].join(' '),
+        ],
         message.role === 'user' && [
-          'px-12 py-5',
-          'bg-[#141414]',
+          'px-6 py-4',
+          'bg-black/20 backdrop-blur-xl',
           'border-b border-white/[0.03]',
           'mb-1'
-        ].join(' ')
+        ]
       )}
     >
       {message.role === 'assistant' && (
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/30">
-            <Bot className="h-5 w-5 text-indigo-400" />
-          </div>
-          <div>
+        <div className="flex items-start gap-3">
+          <FamilyButton>
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+              <Bot className="h-5 w-5 text-cyan-400" />
+            </div>
+          </FamilyButton>
+          <div className="flex-1">
             <div className="text-sm font-medium text-white/90">
               {message.content}
             </div>
@@ -118,8 +135,8 @@ function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactE
 
       {message.role === 'progress' && (
         <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/30">
-            <Settings2 className="h-5 w-5 text-blue-400" />
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/30 border border-white/[0.05]">
+            <Settings2 className="h-5 w-5 text-cyan-400 animate-pulse" />
           </div>
           <div>
             <div className="text-sm font-medium text-white/90">
@@ -130,68 +147,58 @@ function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactE
       )}
 
       {message.role === 'user' && (
-        <div className="text-sm text-white/90">
+        <div className="text-sm text-white/90 pl-[52px]">
           {message.content}
         </div>
       )}
 
       {message.actions && message.actions.length > 0 && (
-        <div className="mt-4 space-y-6 px-16">
+        <div className="mt-4 space-y-2 pl-[52px]">
           {actions.map((action) => (
-            <div key={action.id}>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleCompleteAction(action.id)}
-                  className={cn(
-                    "h-4 w-4 rounded border border-white/20",
-                    "hover:border-white/40 transition-colors",
-                    action.checked && "bg-emerald-500/20 border-emerald-500/50"
-                  )}
-                >
-                  {action.checked && <Check className="h-3 w-3 text-emerald-500" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onActionClick?.(action.id)}
-                  className="text-base font-medium text-white/90 flex-1 text-left hover:text-white transition-colors"
-                >
-                  {action.text}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleExpandAction(action.id)}
-                  className={cn(
-                    "p-1 rounded-full",
-                    "hover:bg-white/5 transition-colors"
-                  )}
-                >
-                  <ChevronRight
-                    className={cn(
-                      "h-4 w-4 text-white/30",
-                      "transition-transform duration-200",
-                      action.isExpanded && "rotate-90"
-                    )}
-                  />
-                </button>
+            <motion.div 
+              key={action.id}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                "rounded-xl border border-white/[0.08] bg-black/40",
+                "backdrop-blur-xl",
+                "overflow-hidden",
+                "transition-all duration-200",
+                action.isExpanded && "ring-1 ring-white/[0.08]"
+              )}
+            >
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  <RainbowButton
+                    onClick={() => onActionClick?.(action.id)}
+                    className="text-sm font-medium"
+                  >
+                    {action.text}
+                  </RainbowButton>
+                </div>
               </div>
 
-              {action.isExpanded && (
-                <div className="px-9 pb-3 space-y-2">
-                  {action.description && (
-                    <div className="text-sm text-white/50 pt-2">
-                      {action.description}
+              {action.isExpanded && action.command && (
+                <div className="border-t border-white/[0.04] bg-black/60">
+                  <div className="flex flex-col gap-1 p-3">
+                    <div className="font-mono text-xs text-white/60">
+                      <span className="text-cyan-400/90">{action.command}</span>
                     </div>
-                  )}
-                  {action.command && (
-                    <div className="flex items-center gap-2 rounded bg-black px-3 py-2 font-mono text-xs text-white/70">
-                      <Terminal className="h-3.5 w-3.5 text-indigo-400" />
-                      {action.command}
-                    </div>
-                  )}
+                    {action.status === 'complete' && (
+                      <div className="font-mono text-xs text-emerald-400/90">
+                        Operation completed
+                      </div>
+                    )}
+                    {action.status === 'loading' && (
+                      <div className="font-mono text-xs text-amber-400/90 flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Processing...
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
@@ -325,6 +332,8 @@ export function ChatIslandDemo(): React.ReactElement {
   const [isThinking, setIsThinking] = React.useState(false)
   const [input, setInput] = React.useState('')
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+  const setStatus = useStatusStore((state) => state.setStatus)
 
   const scrollToBottom = React.useCallback(() => {
     if (!messagesEndRef.current) return
@@ -347,6 +356,9 @@ export function ChatIslandDemo(): React.ReactElement {
     e.preventDefault()
     if (!input.trim() || isThinking) return
 
+    // Update status
+    setStatus('Processing your request...')
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -361,43 +373,27 @@ export function ChatIslandDemo(): React.ReactElement {
     const progressMessage: Message = {
       id: Date.now().toString(),
       role: 'progress',
-      content: 'Analyzing request and preparing agent configuration...',
+      content: 'Analyzing request and preparing response...',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
     updateMessages(progressMessage)
 
     // Simulate AI response
     setTimeout(() => {
+      setStatus('Generating response...')
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I'll help set that up. Here are the steps we need to take:",
+        content: "I'll help with that. Here's what we'll do:",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         actions: [
           {
             id: Date.now().toString(),
-            text: 'Initialize Project',
+            text: 'Analyze Request',
             status: 'loading',
-            description: 'Setting up project structure and dependencies',
-            command: 'bolt init agent-project',
-            isExpanded: false,
-            checked: false
-          },
-          {
-            id: (Date.now() + 1).toString(),
-            text: 'Configure Settings',
-            status: 'ready',
-            description: 'Define agent behavior and capabilities',
-            command: 'bolt config set',
-            isExpanded: false,
-            checked: false
-          },
-          {
-            id: (Date.now() + 2).toString(),
-            text: 'Deploy Agent',
-            status: 'ready',
-            description: 'Deploy agent to development environment',
-            command: 'bolt deploy --env dev',
+            description: 'Processing your input',
+            command: 'analyze',
             isExpanded: false,
             checked: false
           }
@@ -405,8 +401,9 @@ export function ChatIslandDemo(): React.ReactElement {
       }
       updateMessages(aiMessage)
       setIsThinking(false)
+      setStatus('Ready')
     }, 1000)
-  }, [input, isThinking, updateMessages])
+  }, [input, isThinking, setStatus, updateMessages])
 
   const handleActionClick = (actionId: string) => {
     setIsThinking(true)
@@ -513,75 +510,180 @@ export function ChatIslandDemo(): React.ReactElement {
   }, [handleSubmit, input])
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto">
-        <div className="pt-24 pb-6">
-          <AnimatePresence initial={false}>
-            {messages.map((message) => (
-              <ChatMessage 
-                key={message.id} 
-                message={message}
-                onActionClick={handleActionClick}
-              />
-            ))}
-            {isThinking && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className={cn(
-                  'px-12 py-5',
-                  'bg-[#141414]',
-                  'border-b border-white/[0.03]'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/20">
-                    <Settings2 className="h-5 w-5 text-indigo-400" />
-                  </div>
-                  <div className="text-sm font-medium text-white/90">
-                    Thinking about how to help...
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <div className="sticky bottom-0 left-0 right-0 p-6">
-        <div className="px-6">
-          <form onSubmit={handleSubmit}>
+    <div className="relative h-full flex flex-col bg-[#0C0C0D]">
+      {/* Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="sticky top-0 z-10 px-6 py-4 backdrop-blur-xl bg-black/40 border-b border-white/[0.04]"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="absolute left-3 top-3 flex items-center gap-2">
-                <Bot className="h-5 w-5 text-white/30" />
-              </div>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="What kind of agent would you like to build?"
-                aria-label="Message input"
-                disabled={isThinking}
-                className={cn(
-                  "group relative w-full min-h-[84px] animate-rainbow cursor-pointer bg-[length:200%] font-medium transition-colors",
-                  "[background-clip:padding-box,border-box,border-box] [background-origin:border-box] [border:calc(0.08*1rem)_solid_transparent]",
-                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-                  "rounded-xl px-12 py-3 resize-none",
-                  "text-sm text-white/90 placeholder:text-white/30",
-                  
-                  // Rainbow gradient backgrounds
-                  "bg-[linear-gradient(#121213,#121213),linear-gradient(#121213_50%,rgba(18,18,19,0.6)_80%,rgba(18,18,19,0)),linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))]",
-                  "dark:bg-[linear-gradient(#0C0C0C,#0C0C0C),linear-gradient(#0C0C0C_50%,rgba(12,12,12,0.6)_80%,rgba(12,12,12,0)),linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))]",
-                )}
-              />
-              <div className="absolute right-3 top-3">
-                <HelpCircle className="h-5 w-5 text-white/30" />
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-10 blur-lg" />
+              <div className="relative p-2 rounded-xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/[0.06]">
+                <WindowsIcon className="h-5 w-5 text-white/80" />
               </div>
             </div>
-          </form>
+            <div>
+              <h1 className="text-sm font-medium tracking-tight text-white/90">New Software</h1>
+              <p className="text-xs text-white/40">Building project</p>
+            </div>
+          </div>
         </div>
+      </motion.div>
+
+      {/* Messages */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto space-y-4 px-4 py-6"
+      >
+        <AnimatePresence mode="wait">
+          {messages.map((message) => (
+            <motion.div
+              key={message.id}
+              variants={messageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="group relative"
+            >
+              {/* Message bubble */}
+              <div className={cn(
+                "relative w-full rounded-xl p-4",
+                message.role === 'user' ? "bg-white/[0.02] backdrop-blur-xl" : 
+                message.role === 'progress' ? "bg-white/[0.02] backdrop-blur-xl" :
+                "bg-white/[0.02] backdrop-blur-xl"
+              )}>
+                {/* Update indicator */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={cn(
+                    "p-1 rounded-lg",
+                    message.role === 'user' ? "bg-white/[0.04]" : 
+                    message.role === 'progress' ? "bg-white/[0.04]" : 
+                    "bg-white/[0.04]"
+                  )}>
+                    {message.role === 'user' ? (
+                      <Sparkles className="h-3.5 w-3.5 text-white/60" />
+                    ) : message.role === 'progress' ? (
+                      <Loader2 className="h-3.5 w-3.5 text-white/60 animate-spin" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5 text-white/60" />
+                    )}
+                  </div>
+                  <span className="text-xs text-white/40">
+                    {message.role === 'user' ? 'Request' : 
+                     message.role === 'progress' ? 'Processing' : 
+                     'Update'}
+                  </span>
+                  <span className="text-[10px] text-white/30">{message.timestamp}</span>
+                </div>
+
+                {/* Message content */}
+                <div className={cn(
+                  "text-sm leading-relaxed",
+                  message.role === 'user' ? "text-white/90" : "text-white/80"
+                )}>
+                  {message.content}
+                </div>
+
+                {/* Actions */}
+                {message.actions && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 space-y-2"
+                  >
+                    {message.actions.map((action) => (
+                      <motion.button
+                        key={action.id}
+                        onClick={() => handleActionClick(action.id)}
+                        className={cn(
+                          "w-full p-3 rounded-lg border transition-all duration-200",
+                          "backdrop-blur-xl text-left group/action",
+                          "hover:bg-white/[0.02]",
+                          action.isExpanded ? "border-white/[0.08] bg-white/[0.02]" : "border-white/[0.04]"
+                        )}
+                        whileHover={{ scale: 1.002 }}
+                        whileTap={{ scale: 0.998 }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "mt-0.5 p-1.5 rounded-lg transition-colors",
+                            action.status === 'loading' ? "bg-white/[0.04]" : 
+                            action.status === 'complete' ? "bg-white/[0.04]" :
+                            "bg-white/[0.04]"
+                          )}>
+                            {action.status === 'loading' ? (
+                              <Loader2 className="h-4 w-4 text-white/60 animate-spin" />
+                            ) : action.status === 'complete' ? (
+                              <Check className="h-4 w-4 text-white/60" />
+                            ) : (
+                              <Sparkles className="h-4 w-4 text-white/60" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-white/90 group-hover/action:text-white">
+                                {action.text}
+                              </span>
+                              {action.command && (
+                                <code className="px-1.5 py-0.5 text-[10px] rounded bg-white/[0.04] text-white/40">
+                                  {action.command}
+                                </code>
+                              )}
+                            </div>
+                            {action.description && (
+                              <p className="mt-0.5 text-xs text-white/40">
+                                {action.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input area */}
+      <div className="sticky bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0C0C0D] via-[#0C0C0D] to-transparent">
+        <form onSubmit={handleSubmit} className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-[hsl(var(--color-1))] via-[hsl(var(--color-3))] to-[hsl(var(--color-5))] rounded-xl blur-md opacity-30 group-hover:opacity-50 animate-rainbow transition-opacity" />
+          <div className="relative">
+            <div className="absolute left-4 top-4">
+              <Sparkles className="h-5 w-5 text-white/30" />
+            </div>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="What would you like me to help with?"
+              aria-label="Message input"
+              disabled={isThinking}
+              className={cn(
+                "w-full min-h-[84px] pl-12 pr-4 py-3",
+                "bg-black/50 backdrop-blur-xl",
+                "border border-white/10",
+                "rounded-xl resize-none",
+                "text-sm text-white/90",
+                "placeholder:text-white/30",
+                "focus:outline-none focus:ring-0 focus:border-white/20",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "transition-all duration-200"
+              )}
+            />
+            <div className="absolute right-4 bottom-4 flex items-center gap-2 text-white/30">
+              <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04]">⌘</kbd>
+              <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04]">Enter</kbd>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   )

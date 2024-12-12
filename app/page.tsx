@@ -22,10 +22,10 @@ export default function Home() {
             <ToolsPanel />
           </div>
 
-          {/* Logs panel */}
-          <div className="h-40 shrink-0 border-t border-white/[0.02] p-6">
+          {/* Logs panel - Commented out */}
+          {/* <div className="h-40 shrink-0 border-t border-white/[0.02] p-6">
             <LogsPanel />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
