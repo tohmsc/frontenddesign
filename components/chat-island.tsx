@@ -12,6 +12,8 @@ import { RainbowButton } from "@/components/ui/rainbow-button"
 function WindowsIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
+      aria-label="Windows Icon"
+      role="img"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -218,582 +220,531 @@ function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactE
 function ThoughtProcess({ thoughts, onComplete }: { thoughts: ThoughtNode[]; onComplete: () => void }) {
   const [activeThought, setActiveThought] = React.useState(0);
   const [isCompleting, setIsCompleting] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(true);
 
   React.useEffect(() => {
-    if (activeThought < thoughts.length) {
-      const timer = setTimeout(() => {
-        setActiveThought(prev => prev + 1);
-      }, 800);
-      return () => clearTimeout(timer);
-    } else if (!isCompleting) {
+    if (activeThought >= thoughts.length && !isCompleting && isExpanded) {
       setIsCompleting(true);
       setTimeout(() => {
         onComplete();
       }, 600);
+      return;
     }
-  }, [activeThought, thoughts.length, onComplete, isCompleting]);
+
+    if (activeThought < thoughts.length && isExpanded) {
+      const timer = setTimeout(() => {
+        setActiveThought(prev => prev + 1);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [activeThought, thoughts.length, onComplete, isCompleting, isExpanded]);
 
   return (
     <div className="relative py-2">
-      {/* Main vertical line */}
-      <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-gradient-to-b from-blue-400/0 via-blue-400/10 to-blue-400/0">
-        <motion.div 
-          className="absolute top-0 left-0 w-full bg-gradient-to-b from-blue-400/30 via-blue-400/20 to-blue-400/10"
-          initial={{ height: 0 }}
-          animate={{ height: `${(Math.min(activeThought + 1, thoughts.length) / thoughts.length) * 100}%` }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
+      {/* Collapse/Expand button */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded(prev => !prev)}
+        className="absolute -top-1 -right-1 p-1.5 rounded-lg bg-blue-500/5 hover:bg-blue-500/10 transition-colors group"
+      >
+        <ChevronRight 
+          className={cn(
+            "h-4 w-4 text-blue-400/60 transition-transform duration-200",
+            isExpanded ? "rotate-90" : "rotate-0"
+          )}
         />
-      </div>
+      </button>
 
-      <div className="space-y-5">
-        {thoughts.map((thought, index) => (
-          <motion.div
-            key={thought.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ 
-              opacity: index <= activeThought ? 1 : 0.3,
-              y: index <= activeThought ? 0 : 8,
-            }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="relative flex items-center"
-          >
-            {/* Horizontal connector */}
-            <div className="absolute left-3 w-3 h-[1px] bg-gradient-to-r from-blue-400/20 to-transparent" />
-            
-            {/* Dot with pulse */}
-            <div className="relative w-6 h-6 flex items-center justify-center">
-              <div className={cn(
-                "w-1.5 h-1.5 rounded-full transition-colors duration-300",
-                index === activeThought ? "bg-blue-400" :
-                index < activeThought ? "bg-blue-400/40" : 
-                "bg-blue-400/20"
-              )} />
-              {index === activeThought && (
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-blue-400/30"
-                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                />
-              )}
-            </div>
+      <motion.div
+        animate={{ height: isExpanded ? "auto" : "2.5rem" }}
+        transition={{ duration: 0.2 }}
+        className="overflow-hidden"
+      >
+        {/* Main vertical line */}
+        <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-gradient-to-b from-blue-400/0 via-blue-400/10 to-blue-400/0">
+          <motion.div 
+            className="absolute top-0 left-0 w-full bg-gradient-to-b from-blue-400/30 via-blue-400/20 to-blue-400/10"
+            initial={{ height: 0 }}
+            animate={{ height: isExpanded ? `${(Math.min(activeThought + 1, thoughts.length) / thoughts.length) * 100}%` : "0%" }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+          />
+        </div>
 
-            {/* Content */}
+        <div className="space-y-5">
+          {thoughts.map((thought, index) => (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: index <= activeThought ? 1 : 0.3 }}
-              transition={{ duration: 0.3 }}
-              className={cn(
-                "flex-1 text-sm leading-relaxed pl-3",
-                index === activeThought ? "text-blue-100/90" :
-                index < activeThought ? "text-blue-100/70" :
-                "text-blue-100/40"
-              )}
+              key={thought.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ 
+                opacity: !isExpanded ? (index === 0 ? 1 : 0) :
+                         index <= activeThought ? 1 : 0.3,
+                y: !isExpanded ? (index === 0 ? 0 : 8) :
+                   index <= activeThought ? 0 : 8,
+              }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="relative flex items-center"
             >
-              <span className="font-light">{thought.content}</span>
+              {/* Horizontal connector */}
+              <div className="absolute left-3 w-3 h-[1px] bg-gradient-to-r from-blue-400/20 to-transparent" />
+              
+              {/* Dot with pulse */}
+              <div className="relative w-6 h-6 flex items-center justify-center">
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-colors duration-300",
+                  index === activeThought ? "bg-blue-400" :
+                  index < activeThought ? "bg-blue-400/40" : 
+                  "bg-blue-400/20"
+                )} />
+                {index === activeThought && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-blue-400/30"
+                    animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
+                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
+                  />
+                )}
+              </div>
+
+              {/* Content */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: index <= activeThought ? 1 : 0.3 }}
+                transition={{ duration: 0.3 }}
+                className={cn(
+                  "flex-1 text-sm leading-relaxed pl-3",
+                  index === activeThought ? "text-blue-100/90" :
+                  index < activeThought ? "text-blue-100/70" :
+                  "text-blue-100/40"
+                )}
+              >
+                <span className="font-light">{thought.content}</span>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ))}
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+type AIStatus = 'thinking' | 'building' | 'responding' | 'waiting';
+
+function AIStatusIndicator({ status }: { status: AIStatus }) {
+  return (
+    <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-blue-500/10">
+      <div className="relative flex items-center">
+        <div className={cn(
+          "h-2 w-2 rounded-full",
+          status === 'thinking' && "bg-amber-400",
+          status === 'building' && "bg-emerald-400",
+          status === 'responding' && "bg-blue-400",
+          status === 'waiting' && "bg-slate-400"
+        )}>
+          <motion.div
+            className={cn(
+              "absolute inset-0 rounded-full",
+              status === 'thinking' && "bg-amber-400",
+              status === 'building' && "bg-emerald-400",
+              status === 'responding' && "bg-blue-400",
+              status === 'waiting' && "bg-slate-400"
+            )}
+            initial={{ scale: 1, opacity: 0.5 }}
+            animate={status !== 'waiting' ? {
+              scale: [1, 1.5, 1],
+              opacity: [0.5, 0, 0.5]
+            } : {
+              scale: 1,
+              opacity: 0.5
+            }}
+            transition={{
+              duration: 2,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "easeInOut"
+            }}
+          />
+        </div>
       </div>
+      <span className={cn(
+        "text-xs font-medium capitalize",
+        status === 'thinking' && "text-amber-400",
+        status === 'building' && "text-emerald-400",
+        status === 'responding' && "text-blue-400",
+        status === 'waiting' && "text-slate-400"
+      )}>
+        {status}
+      </span>
     </div>
   );
 }
 
 export function ChatIslandDemo(): React.ReactElement {
-  const [messages, setMessages] = React.useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: "I'm your AI agent, ready to help build and improve your project. I'll explain what I'm doing as we go along.",
-      timestamp: new Date().toISOString(),
-      actions: [
-        {
-          id: '1',
-          text: 'Create Code Assistant',
-          status: 'ready',
-          description: 'Build an AI agent that helps with coding tasks',
-          command: 'npm create agent@latest',
-          isExpanded: false,
-          checked: false
-        },
-        {
-          id: '2',
-          text: 'Create Data Analyzer',
-          status: 'ready',
-          description: 'Build an AI agent for data analysis and visualization',
-          command: 'npm create agent@latest',
-          isExpanded: false,
-          checked: false
-        },
-        {
-          id: '3',
-          text: 'Create Custom Agent',
-          status: 'ready',
-          description: 'Build a custom AI agent from scratch',
-          command: 'npm create agent@latest',
-          isExpanded: false,
-          checked: false
-        }
-      ]
-    },
-    {
-      id: 'user-1',
-      role: 'user',
-      content: "I'd like to create a code assistant that can help with code reviews and suggestions.",
-      timestamp: new Date().toISOString()
-    },
-    {
-      id: 'progress-1',
-      role: 'progress',
-      content: 'Setting up your code assistant agent...',
-      timestamp: new Date().toISOString()
-    },
-    {
-      id: 'assistant-1',
-      role: 'assistant',
-      content: "Great choice! I'll help you set up a code assistant. Here's what we'll do:",
-      timestamp: new Date().toISOString(),
-      actions: [
-        {
-          id: 'setup-1',
-          text: 'Initialize Project',
-          status: 'complete',
-          description: 'Setting up the project structure',
-          command: 'npm init',
-          isExpanded: true,
-          checked: true
-        },
-        {
-          id: 'setup-2',
-          text: 'Configure Code Analysis',
-          status: 'loading',
-          description: 'Setting up code parsing and analysis capabilities',
-          command: 'npm install @babel/parser',
-          isExpanded: true,
-          checked: false
-        },
-        {
-          id: 'setup-3',
-          text: 'Setup Language Models',
-          status: 'ready',
-          description: 'Configure AI models for code understanding',
-          command: 'npm install @transformers/code',
-          isExpanded: false,
-          checked: false
-        }
-      ]
-    },
-    {
-      id: 'user-2',
-      role: 'user',
-      content: "What kind of code analysis capabilities will it have?",
-      timestamp: new Date().toISOString()
-    },
-    {
-      id: 'assistant-2',
-      role: 'assistant',
-      content: "The code assistant will have these analysis capabilities:",
-      timestamp: new Date().toISOString(),
-      actions: [
-        {
-          id: 'analysis-1',
-          text: 'Static Analysis',
-          status: 'complete',
-          description: 'Detect code patterns and potential issues',
-          isExpanded: true,
-          checked: true
-        },
-        {
-          id: 'analysis-2',
-          text: 'Style Checking',
-          status: 'complete',
-          description: 'Ensure code follows style guidelines',
-          isExpanded: true,
-          checked: true
-        },
-        {
-          id: 'analysis-3',
-          text: 'Security Scanning',
-          status: 'loading',
-          description: 'Identify security vulnerabilities',
-          isExpanded: true,
-          checked: false
-        }
-      ]
-    }
-  ])
-  const [isThinking, setIsThinking] = React.useState(false)
-  const [input, setInput] = React.useState('')
-  const messagesEndRef = React.useRef<HTMLDivElement>(null)
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
-  const setStatus = useStatusStore((state) => state.setStatus)
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [currentAIStatus, setCurrentAIStatus] = React.useState<AIStatus>('waiting');
+  const [isThinking, setIsThinking] = React.useState(false);
+  const [input, setInput] = React.useState('');
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const setStatus = useStatusStore((state) => state.setStatus);
 
   const scrollToBottom = React.useCallback(() => {
-    if (!messagesEndRef.current) return
+    if (!messagesEndRef.current) return;
     const timeoutId = setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    }, 100)
-    return () => clearTimeout(timeoutId)
-  }, [])
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   React.useEffect(() => {
-    scrollToBottom()
-  }, [scrollToBottom])
+    scrollToBottom();
+  }, [scrollToBottom]);
 
   const updateMessages = React.useCallback((newMessage: Message) => {
-    setMessages(prev => [...prev, newMessage])
-    scrollToBottom()
-  }, [scrollToBottom])
+    setMessages(prev => [...prev, newMessage]);
+    scrollToBottom();
+  }, [scrollToBottom]);
 
   const handleSubmit = React.useCallback((e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!input.trim() || isThinking) return
+    e.preventDefault();
+    if (!input.trim() || isThinking) return;
 
-    setStatus('Processing your request...')
+    setStatus('Processing your request...');
+    setCurrentAIStatus('thinking');
     
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: input.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-    updateMessages(userMessage)
-    setInput('')
-    setIsThinking(true)
+    };
+    updateMessages(userMessage);
+    setInput('');
+    setIsThinking(true);
 
+    // Add thought process message
     const thoughtProcess: Message = {
-      id: Date.now().toString(),
+      id: `thought-${Date.now()}`,
       role: 'thought',
-      content: 'Processing...',
+      content: 'Processing your request...',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       thoughts: [
         {
-          id: '1',
+          id: 'thought-1',
           thoughtNumber: 1,
           thoughtType: 'understanding',
-          content: 'Analyzing input...',
+          content: 'Analyzing your request...',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         },
         {
-          id: '2',
+          id: 'thought-2',
           thoughtNumber: 2,
           thoughtType: 'gathering',
-          content: 'Processing context...',
+          content: 'Gathering context and information...',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         },
         {
-          id: '3',
+          id: 'thought-3',
           thoughtNumber: 3,
           thoughtType: 'decomposition',
-          content: 'Formulating response...',
+          content: 'Breaking down the problem...',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        {
+          id: 'thought-4',
+          thoughtNumber: 4,
+          thoughtType: 'solution',
+          content: 'Formulating the solution...',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]
-    }
-    updateMessages(thoughtProcess)
-  }, [input, isThinking, setStatus, updateMessages])
+    };
+    updateMessages(thoughtProcess);
 
-  const handleActionClick = (actionId: string) => {
-    setIsThinking(true)
+    // Simulate AI response after thoughts
+    setTimeout(() => {
+      const aiMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "I've processed your request. Here's what we can do:",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        actions: [
+          {
+            id: 'action-1',
+            text: 'Analyze Code',
+            status: 'ready',
+            description: 'Review and suggest improvements',
+            isExpanded: true,
+            checked: false
+          },
+          {
+            id: 'action-2',
+            text: 'Generate Tests',
+            status: 'ready',
+            description: 'Create test cases',
+            isExpanded: false,
+            checked: false
+          }
+        ]
+      };
+      updateMessages(aiMessage);
+      setIsThinking(false);
+      setCurrentAIStatus('waiting');
+      setStatus('Ready');
+    }, 2000); // Increased timeout to allow for thought process animation
+  }, [input, isThinking, setStatus, updateMessages]);
+
+  const handleActionClick = React.useCallback((actionId: string) => {
+    setIsThinking(true);
+    setCurrentAIStatus('building');
     
     const progressMessage: Message = {
       id: Date.now().toString(),
       role: 'progress',
       content: 'Processing your request...',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-    updateMessages(progressMessage)
+    };
+    updateMessages(progressMessage);
 
     setTimeout(() => {
-      const responses: Record<string, Message> = {
-        '1': {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: "Let's set up your code assistant. First, we'll configure the core features:",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          actions: [
-            {
-              id: 'code-1',
-              text: 'Code Parsing',
-              status: 'loading',
-              description: 'Setting up language parsers',
-              isExpanded: true,
-              checked: false
-            },
-            {
-              id: 'code-2',
-              text: 'Analysis Rules',
-              status: 'ready',
-              description: 'Configure analysis patterns',
-              isExpanded: false,
-              checked: false
-            }
-          ]
-        },
-        '2': {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: "Let's configure your data analyzer with these capabilities:",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          actions: [
-            {
-              id: 'data-1',
-              text: 'Data Import',
-              status: 'loading',
-              description: 'Configure data source connections',
-              isExpanded: true,
-              checked: false
-            },
-            {
-              id: 'data-2',
-              text: 'Analysis Pipeline',
-              status: 'ready',
-              description: 'Set up data processing steps',
-              isExpanded: false,
-              checked: false
-            }
-          ]
-        },
-        '3': {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: "Let's create your custom agent. What capabilities would you like to add?",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          actions: [
-            {
-              id: 'custom-1',
-              text: 'Core Features',
-              status: 'ready',
-              description: 'Choose base capabilities',
-              isExpanded: true,
-              checked: false
-            },
-            {
-              id: 'custom-2',
-              text: 'Extensions',
-              status: 'ready',
-              description: 'Add specialized features',
-              isExpanded: false,
-              checked: false
-            }
-          ]
-        }
-      }
-
-      const selectedResponse = responses[actionId]
-      if (selectedResponse) {
-        updateMessages(selectedResponse)
-      }
-      setIsThinking(false)
-    }, 800)
-  }
+      const aiMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "I've completed the action. Here's what happened:",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        actions: [
+          {
+            id: 'result-1',
+            text: 'View Results',
+            status: 'complete',
+            description: 'See the changes made',
+            isExpanded: true,
+            checked: true
+          }
+        ]
+      };
+      updateMessages(aiMessage);
+      setIsThinking(false);
+      setCurrentAIStatus('waiting');
+      setStatus('Ready');
+    }, 800);
+  }, [setStatus, updateMessages]);
 
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
+      e.preventDefault();
       if (input.trim()) {
-        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
+        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
       }
     }
-  }, [handleSubmit, input])
+  }, [handleSubmit, input]);
+
+  // Status effect remains the same
+  React.useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage) {
+      setCurrentAIStatus('waiting');
+      return;
+    }
+
+    if (lastMessage.role === 'user') {
+      setCurrentAIStatus('thinking');
+    } else if (lastMessage.role === 'progress') {
+      setCurrentAIStatus('building');
+    } else if (lastMessage.role === 'assistant') {
+      setCurrentAIStatus('responding');
+    } else {
+      setCurrentAIStatus('waiting');
+    }
+  }, [messages]);
 
   return (
     <div className="relative h-full flex flex-col bg-[#0C0C0D]">
-      {/* Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-10 px-6 py-4 backdrop-blur-xl bg-black/40 border-b border-white/[0.04]"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-10 blur-lg" />
-              <div className="relative p-2 rounded-xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/[0.06]">
-                <WindowsIcon className="h-5 w-5 text-white/80" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-sm font-medium tracking-tight text-white/90">New Software</h1>
-              <p className="text-xs text-white/40">Building project</p>
-            </div>
-          </div>
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <WindowsIcon className="h-5 w-5 text-blue-400" />
+          <span className="text-sm font-medium text-neutral-200">New Software</span>
+          <AIStatusIndicator status={currentAIStatus} />
         </div>
-      </motion.div>
-
-      {/* Messages */}
+        {/* ... rest of header content ... */}
+      </div>
+      
+      {/* Messages with improved spacing */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto space-y-4 px-4 py-6"
+        className="flex-1 overflow-y-auto px-4 py-6"
       >
-        <AnimatePresence mode="wait">
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              variants={messageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="group relative"
-            >
-              {/* Message bubble */}
-              <div className={cn(
-                "relative w-full rounded-xl p-4",
-                message.role === 'user' ? "py-2" :
-                message.role === 'progress' ? "bg-gradient-to-br from-amber-500/10 to-orange-500/5 backdrop-blur-xl border border-amber-500/10" :
-                message.role === 'thought' ? "bg-gradient-to-br from-blue-500/10 to-cyan-500/5 backdrop-blur-xl border border-blue-500/10" :
-                "bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 backdrop-blur-xl border border-emerald-500/10"
-              )}>
-                {/* Update indicator - Only show for non-user messages */}
-                {message.role !== 'user' && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={cn(
-                      "p-1 rounded-lg",
-                      message.role === 'progress' ? "bg-amber-500/10" :
-                      message.role === 'thought' ? "bg-blue-500/10" :
-                      "bg-emerald-500/10"
-                    )}>
-                      {message.role === 'progress' ? (
-                        <Loader2 className="h-3.5 w-3.5 text-amber-400 animate-spin" />
-                      ) : message.role === 'thought' ? (
-                        <Brain className="h-3.5 w-3.5 text-blue-400" />
-                      ) : (
-                        <Check className="h-3.5 w-3.5 text-emerald-400" />
-                      )}
-                    </div>
-                    <span className={cn(
-                      "text-xs",
-                      message.role === 'progress' ? "text-amber-400/80" :
-                      message.role === 'thought' ? "text-blue-400/80" :
-                      "text-emerald-400/80"
-                    )}>
-                      {message.role === 'progress' ? 'Processing' :
-                       message.role === 'thought' ? 'Thinking' :
-                       'Update'}
-                    </span>
-                  </div>
+        <div className="space-y-8"> {/* Increased space between message groups */}
+          <AnimatePresence mode="wait">
+            {messages.map((message) => (
+              <motion.div
+                key={message.id}
+                variants={messageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className={cn(
+                  "group relative",
+                  message.role === 'user' ? "mb-6" : "mb-8" // Additional spacing after messages
                 )}
-
-                {/* Message content */}
-                {message.role === 'thought' && message.thoughts ? (
-                  <ThoughtProcess 
-                    thoughts={message.thoughts} 
-                    onComplete={() => {
-                      const aiMessage: Message = {
-                        id: Date.now().toString(),
-                        role: 'assistant',
-                        content: "Based on my analysis, here's what we'll do:",
-                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        actions: [
-                          {
-                            id: Date.now().toString(),
-                            text: 'Implement Solution',
-                            status: 'complete',
-                            description: 'Ready to proceed with implementation',
-                            command: 'implement',
-                            isExpanded: false,
-                            checked: true
-                          }
-                        ]
-                      }
-                      updateMessages(aiMessage)
-                      setIsThinking(false)
-                      setStatus('Ready')
-                    }}
-                  />
-                ) : (
-                  <div className={cn(
-                    "text-sm leading-relaxed",
-                    message.role === 'user' ? "text-white/80 pl-1" :
-                    message.role === 'progress' ? "text-amber-50/90" :
-                    message.role === 'thought' ? "text-blue-50/90" :
-                    "text-emerald-50/90"
-                  )}>
-                    {message.content}
-                  </div>
-                )}
-
-                {/* Actions - Only show for non-user messages */}
-                {message.role !== 'user' && message.actions && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 space-y-2"
-                  >
-                    {message.actions.map((action) => (
-                      <motion.button
-                        key={action.id}
-                        onClick={() => handleActionClick(action.id)}
-                        className={cn(
-                          "w-full p-3 rounded-lg border transition-all duration-200",
-                          "backdrop-blur-xl text-left group/action",
-                          "hover:bg-white/[0.02]",
-                          action.isExpanded ? 
-                            action.status === 'loading' ? "border-amber-500/20 bg-amber-500/5" :
-                            action.status === 'complete' ? "border-emerald-500/20 bg-emerald-500/5" :
-                            "border-indigo-500/20 bg-indigo-500/5"
-                          : "border-white/[0.04]"
+              >
+                {/* Message bubble */}
+                <div className={cn(
+                  "relative w-full rounded-xl p-4",
+                  message.role === 'user' ? "py-2" :
+                  message.role === 'progress' ? "bg-gradient-to-br from-amber-500/10 to-orange-500/5 backdrop-blur-xl border border-amber-500/10" :
+                  message.role === 'thought' ? "bg-gradient-to-br from-blue-500/10 to-cyan-500/5 backdrop-blur-xl border border-blue-500/10" :
+                  "bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 backdrop-blur-xl border border-emerald-500/10"
+                )}>
+                  {/* Update indicator - Only show for non-user messages */}
+                  {message.role !== 'user' && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={cn(
+                        "p-1 rounded-lg",
+                        message.role === 'progress' ? "bg-amber-500/10" :
+                        message.role === 'thought' ? "bg-blue-500/10" :
+                        "bg-emerald-500/10"
+                      )}>
+                        {message.role === 'progress' ? (
+                          <Loader2 className="h-3.5 w-3.5 text-amber-400 animate-spin" />
+                        ) : message.role === 'thought' ? (
+                          <Brain className="h-3.5 w-3.5 text-blue-400" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
                         )}
-                        whileHover={{ scale: 1.002 }}
-                        whileTap={{ scale: 0.998 }}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            "mt-0.5 p-1.5 rounded-lg transition-colors",
-                            action.status === 'loading' ? "bg-amber-500/10" :
-                            action.status === 'complete' ? "bg-emerald-500/10" :
-                            "bg-indigo-500/10"
-                          )}>
-                            {action.status === 'loading' ? (
-                              <Loader2 className="h-4 w-4 text-amber-400 animate-spin" />
-                            ) : action.status === 'complete' ? (
-                              <Check className="h-4 w-4 text-emerald-400" />
-                            ) : (
-                              <Sparkles className="h-4 w-4 text-indigo-400" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className={cn(
-                                "text-sm",
-                                action.status === 'loading' ? "text-amber-100/90" :
-                                action.status === 'complete' ? "text-emerald-100/90" :
-                                "text-indigo-100/90",
-                                "group-hover/action:text-white"
-                              )}>
-                                {action.text}
-                              </span>
-                              {action.command && (
-                                <code className={cn(
-                                  "px-1.5 py-0.5 text-[10px] rounded",
-                                  action.status === 'loading' ? "bg-amber-500/10 text-amber-300/60" :
-                                  action.status === 'complete' ? "bg-emerald-500/10 text-emerald-300/60" :
-                                  "bg-indigo-500/10 text-indigo-300/60"
-                                )}>
-                                  {action.command}
-                                </code>
+                      </div>
+                      <span className={cn(
+                        "text-xs",
+                        message.role === 'progress' ? "text-amber-400/80" :
+                        message.role === 'thought' ? "text-blue-400/80" :
+                        "text-emerald-400/80"
+                      )}>
+                        {message.role === 'progress' ? 'Processing' :
+                         message.role === 'thought' ? 'Thinking' :
+                         'Update'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Message content */}
+                  {message.role === 'thought' && message.thoughts ? (
+                    <ThoughtProcess 
+                      thoughts={message.thoughts} 
+                      onComplete={() => {
+                        const aiMessage: Message = {
+                          id: Date.now().toString(),
+                          role: 'assistant',
+                          content: "Based on my analysis, here's what we'll do:",
+                          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                          actions: [
+                            {
+                              id: Date.now().toString(),
+                              text: 'Implement Solution',
+                              status: 'complete',
+                              description: 'Ready to proceed with implementation',
+                              command: 'implement',
+                              isExpanded: false,
+                              checked: true
+                            }
+                          ]
+                        }
+                        updateMessages(aiMessage)
+                        setIsThinking(false)
+                        setStatus('Ready')
+                      }}
+                    />
+                  ) : (
+                    <div className={cn(
+                      "text-sm leading-relaxed",
+                      message.role === 'user' ? "text-white/80 pl-1" :
+                      message.role === 'progress' ? "text-amber-50/90" :
+                      message.role === 'thought' ? "text-blue-50/90" :
+                      "text-emerald-50/90"
+                    )}>
+                      {message.content}
+                    </div>
+                  )}
+
+                  {/* Actions - Only show for non-user messages */}
+                  {message.role !== 'user' && message.actions && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 space-y-2"
+                    >
+                      {message.actions.map((action) => (
+                        <motion.button
+                          key={action.id}
+                          onClick={() => handleActionClick(action.id)}
+                          className={cn(
+                            "w-full p-3 rounded-lg border transition-all duration-200",
+                            "backdrop-blur-xl text-left group/action",
+                            "hover:bg-white/[0.02]",
+                            action.isExpanded ? 
+                              action.status === 'loading' ? "border-amber-500/20 bg-amber-500/5" :
+                              action.status === 'complete' ? "border-emerald-500/20 bg-emerald-500/5" :
+                              "border-indigo-500/20 bg-indigo-500/5"
+                            : "border-white/[0.04]"
+                          )}
+                          whileHover={{ scale: 1.002 }}
+                          whileTap={{ scale: 0.998 }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={cn(
+                              "mt-0.5 p-1.5 rounded-lg transition-colors",
+                              action.status === 'loading' ? "bg-amber-500/10" :
+                              action.status === 'complete' ? "bg-emerald-500/10" :
+                              "bg-indigo-500/10"
+                            )}>
+                              {action.status === 'loading' ? (
+                                <Loader2 className="h-4 w-4 text-amber-400 animate-spin" />
+                              ) : action.status === 'complete' ? (
+                                <Check className="h-4 w-4 text-emerald-400" />
+                              ) : (
+                                <Sparkles className="h-4 w-4 text-indigo-400" />
                               )}
                             </div>
-                            {action.description && (
-                              <p className={cn(
-                                "mt-0.5 text-xs",
-                                action.status === 'loading' ? "text-amber-200/40" :
-                                action.status === 'complete' ? "text-emerald-200/40" :
-                                "text-indigo-200/40"
-                              )}>
-                                {action.description}
-                              </p>
-                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "text-sm",
+                                  action.status === 'loading' ? "text-amber-100/90" :
+                                  action.status === 'complete' ? "text-emerald-100/90" :
+                                  "text-indigo-100/90",
+                                  "group-hover/action:text-white"
+                                )}>
+                                  {action.text}
+                                </span>
+                                {action.command && (
+                                  <code className={cn(
+                                    "px-1.5 py-0.5 text-[10px] rounded",
+                                    action.status === 'loading' ? "bg-amber-500/10 text-amber-300/60" :
+                                    action.status === 'complete' ? "bg-emerald-500/10 text-emerald-300/60" :
+                                    "bg-indigo-500/10 text-indigo-300/60"
+                                  )}>
+                                    {action.command}
+                                  </code>
+                                )}
+                              </div>
+                              {action.description && (
+                                <p className={cn(
+                                  "mt-0.5 text-xs",
+                                  action.status === 'loading' ? "text-amber-200/40" :
+                                  action.status === 'complete' ? "text-emerald-200/40" :
+                                  "text-indigo-200/40"
+                                )}>
+                                  {action.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </motion.button>
-                    ))}
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        <div ref={messagesEndRef} />
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+        <div ref={messagesEndRef} className="h-4" /> {/* Added bottom padding */}
       </div>
 
       {/* Input area */}
