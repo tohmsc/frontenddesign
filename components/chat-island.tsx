@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Variants } from "framer-motion"
-import { Brain, ChevronRight, Loader2, Check, Code, Bot, HelpCircle, Terminal, Settings2, Sparkles, Zap } from "lucide-react"
+import { Brain, ChevronRight, Loader2, Check, Code, Bot, HelpCircle, Terminal, Settings2, Sparkles, Zap, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { create } from 'zustand'
 import { FamilyButton } from "@/components/ui/family-button"
@@ -48,12 +48,21 @@ interface Action {
   checked?: boolean
 }
 
+interface ThoughtNode {
+  id: string;
+  thoughtNumber: number;
+  thoughtType: 'understanding' | 'gathering' | 'decomposition' | 'solution';
+  content: string;
+  timestamp: string;
+}
+
 interface Message {
   id: string
-  role: 'user' | 'assistant' | 'progress'
+  role: 'user' | 'assistant' | 'progress' | 'thought'
   content: string
   timestamp: string
   actions?: Action[]
+  thoughts?: ThoughtNode[]
 }
 
 interface ChatMessageProps {
@@ -206,6 +215,89 @@ function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactE
   )
 }
 
+function ThoughtProcess({ thoughts, onComplete }: { thoughts: ThoughtNode[]; onComplete: () => void }) {
+  const [activeThought, setActiveThought] = React.useState(0);
+  const [isCompleting, setIsCompleting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (activeThought < thoughts.length) {
+      const timer = setTimeout(() => {
+        setActiveThought(prev => prev + 1);
+      }, 800);
+      return () => clearTimeout(timer);
+    } else if (!isCompleting) {
+      setIsCompleting(true);
+      setTimeout(() => {
+        onComplete();
+      }, 600);
+    }
+  }, [activeThought, thoughts.length, onComplete, isCompleting]);
+
+  return (
+    <div className="relative py-2">
+      {/* Main vertical line */}
+      <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-gradient-to-b from-blue-400/0 via-blue-400/10 to-blue-400/0">
+        <motion.div 
+          className="absolute top-0 left-0 w-full bg-gradient-to-b from-blue-400/30 via-blue-400/20 to-blue-400/10"
+          initial={{ height: 0 }}
+          animate={{ height: `${(Math.min(activeThought + 1, thoughts.length) / thoughts.length) * 100}%` }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="space-y-5">
+        {thoughts.map((thought, index) => (
+          <motion.div
+            key={thought.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ 
+              opacity: index <= activeThought ? 1 : 0.3,
+              y: index <= activeThought ? 0 : 8,
+            }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative flex items-center"
+          >
+            {/* Horizontal connector */}
+            <div className="absolute left-3 w-3 h-[1px] bg-gradient-to-r from-blue-400/20 to-transparent" />
+            
+            {/* Dot with pulse */}
+            <div className="relative w-6 h-6 flex items-center justify-center">
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full transition-colors duration-300",
+                index === activeThought ? "bg-blue-400" :
+                index < activeThought ? "bg-blue-400/40" : 
+                "bg-blue-400/20"
+              )} />
+              {index === activeThought && (
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-blue-400/30"
+                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
+              )}
+            </div>
+
+            {/* Content */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: index <= activeThought ? 1 : 0.3 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "flex-1 text-sm leading-relaxed pl-3",
+                index === activeThought ? "text-blue-100/90" :
+                index < activeThought ? "text-blue-100/70" :
+                "text-blue-100/40"
+              )}
+            >
+              <span className="font-light">{thought.content}</span>
+            </motion.div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ChatIslandDemo(): React.ReactElement {
   const [messages, setMessages] = React.useState<Message[]>([
     {
@@ -356,7 +448,6 @@ export function ChatIslandDemo(): React.ReactElement {
     e.preventDefault()
     if (!input.trim() || isThinking) return
 
-    // Update status
     setStatus('Processing your request...')
     
     const userMessage: Message = {
@@ -369,40 +460,36 @@ export function ChatIslandDemo(): React.ReactElement {
     setInput('')
     setIsThinking(true)
 
-    // Show progress message
-    const progressMessage: Message = {
+    const thoughtProcess: Message = {
       id: Date.now().toString(),
-      role: 'progress',
-      content: 'Analyzing request and preparing response...',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      role: 'thought',
+      content: 'Processing...',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      thoughts: [
+        {
+          id: '1',
+          thoughtNumber: 1,
+          thoughtType: 'understanding',
+          content: 'Analyzing input...',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        {
+          id: '2',
+          thoughtNumber: 2,
+          thoughtType: 'gathering',
+          content: 'Processing context...',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        {
+          id: '3',
+          thoughtNumber: 3,
+          thoughtType: 'decomposition',
+          content: 'Formulating response...',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]
     }
-    updateMessages(progressMessage)
-
-    // Simulate AI response
-    setTimeout(() => {
-      setStatus('Generating response...')
-      
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "I'll help with that. Here's what we'll do:",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actions: [
-          {
-            id: Date.now().toString(),
-            text: 'Analyze Request',
-            status: 'loading',
-            description: 'Processing your input',
-            command: 'analyze',
-            isExpanded: false,
-            checked: false
-          }
-        ]
-      }
-      updateMessages(aiMessage)
-      setIsThinking(false)
-      setStatus('Ready')
-    }, 1000)
+    updateMessages(thoughtProcess)
   }, [input, isThinking, setStatus, updateMessages])
 
   const handleActionClick = (actionId: string) => {
@@ -551,51 +638,82 @@ export function ChatIslandDemo(): React.ReactElement {
               {/* Message bubble */}
               <div className={cn(
                 "relative w-full rounded-xl p-4",
-                message.role === 'user' ? "bg-gradient-to-br from-indigo-500/10 to-purple-500/5 backdrop-blur-xl border border-indigo-500/10" : 
+                message.role === 'user' ? "py-2" :
                 message.role === 'progress' ? "bg-gradient-to-br from-amber-500/10 to-orange-500/5 backdrop-blur-xl border border-amber-500/10" :
+                message.role === 'thought' ? "bg-gradient-to-br from-blue-500/10 to-cyan-500/5 backdrop-blur-xl border border-blue-500/10" :
                 "bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 backdrop-blur-xl border border-emerald-500/10"
               )}>
-                {/* Update indicator */}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={cn(
-                    "p-1 rounded-lg",
-                    message.role === 'user' ? "bg-indigo-500/10" : 
-                    message.role === 'progress' ? "bg-amber-500/10" : 
-                    "bg-emerald-500/10"
-                  )}>
-                    {message.role === 'user' ? (
-                      <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-                    ) : message.role === 'progress' ? (
-                      <Loader2 className="h-3.5 w-3.5 text-amber-400 animate-spin" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    )}
+                {/* Update indicator - Only show for non-user messages */}
+                {message.role !== 'user' && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={cn(
+                      "p-1 rounded-lg",
+                      message.role === 'progress' ? "bg-amber-500/10" :
+                      message.role === 'thought' ? "bg-blue-500/10" :
+                      "bg-emerald-500/10"
+                    )}>
+                      {message.role === 'progress' ? (
+                        <Loader2 className="h-3.5 w-3.5 text-amber-400 animate-spin" />
+                      ) : message.role === 'thought' ? (
+                        <Brain className="h-3.5 w-3.5 text-blue-400" />
+                      ) : (
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      )}
+                    </div>
+                    <span className={cn(
+                      "text-xs",
+                      message.role === 'progress' ? "text-amber-400/80" :
+                      message.role === 'thought' ? "text-blue-400/80" :
+                      "text-emerald-400/80"
+                    )}>
+                      {message.role === 'progress' ? 'Processing' :
+                       message.role === 'thought' ? 'Thinking' :
+                       'Update'}
+                    </span>
                   </div>
-                  <span className={cn(
-                    "text-xs",
-                    message.role === 'user' ? "text-indigo-400/80" : 
-                    message.role === 'progress' ? "text-amber-400/80" : 
-                    "text-emerald-400/80"
-                  )}>
-                    {message.role === 'user' ? 'Request' : 
-                     message.role === 'progress' ? 'Processing' : 
-                     'Update'}
-                  </span>
-                  <span className="text-[10px] text-white/30">{message.timestamp}</span>
-                </div>
+                )}
 
                 {/* Message content */}
-                <div className={cn(
-                  "text-sm leading-relaxed",
-                  message.role === 'user' ? "text-indigo-50/90" : 
-                  message.role === 'progress' ? "text-amber-50/90" : 
-                  "text-emerald-50/90"
-                )}>
-                  {message.content}
-                </div>
+                {message.role === 'thought' && message.thoughts ? (
+                  <ThoughtProcess 
+                    thoughts={message.thoughts} 
+                    onComplete={() => {
+                      const aiMessage: Message = {
+                        id: Date.now().toString(),
+                        role: 'assistant',
+                        content: "Based on my analysis, here's what we'll do:",
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        actions: [
+                          {
+                            id: Date.now().toString(),
+                            text: 'Implement Solution',
+                            status: 'complete',
+                            description: 'Ready to proceed with implementation',
+                            command: 'implement',
+                            isExpanded: false,
+                            checked: true
+                          }
+                        ]
+                      }
+                      updateMessages(aiMessage)
+                      setIsThinking(false)
+                      setStatus('Ready')
+                    }}
+                  />
+                ) : (
+                  <div className={cn(
+                    "text-sm leading-relaxed",
+                    message.role === 'user' ? "text-white/80 pl-1" :
+                    message.role === 'progress' ? "text-amber-50/90" :
+                    message.role === 'thought' ? "text-blue-50/90" :
+                    "text-emerald-50/90"
+                  )}>
+                    {message.content}
+                  </div>
+                )}
 
-                {/* Actions */}
-                {message.actions && (
+                {/* Actions - Only show for non-user messages */}
+                {message.role !== 'user' && message.actions && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
