@@ -551,27 +551,32 @@ export function ChatIslandDemo(): React.ReactElement {
               {/* Message bubble */}
               <div className={cn(
                 "relative w-full rounded-xl p-4",
-                message.role === 'user' ? "bg-white/[0.02] backdrop-blur-xl" : 
-                message.role === 'progress' ? "bg-white/[0.02] backdrop-blur-xl" :
-                "bg-white/[0.02] backdrop-blur-xl"
+                message.role === 'user' ? "bg-gradient-to-br from-indigo-500/10 to-purple-500/5 backdrop-blur-xl border border-indigo-500/10" : 
+                message.role === 'progress' ? "bg-gradient-to-br from-amber-500/10 to-orange-500/5 backdrop-blur-xl border border-amber-500/10" :
+                "bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 backdrop-blur-xl border border-emerald-500/10"
               )}>
                 {/* Update indicator */}
                 <div className="flex items-center gap-2 mb-2">
                   <div className={cn(
                     "p-1 rounded-lg",
-                    message.role === 'user' ? "bg-white/[0.04]" : 
-                    message.role === 'progress' ? "bg-white/[0.04]" : 
-                    "bg-white/[0.04]"
+                    message.role === 'user' ? "bg-indigo-500/10" : 
+                    message.role === 'progress' ? "bg-amber-500/10" : 
+                    "bg-emerald-500/10"
                   )}>
                     {message.role === 'user' ? (
-                      <Sparkles className="h-3.5 w-3.5 text-white/60" />
+                      <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
                     ) : message.role === 'progress' ? (
-                      <Loader2 className="h-3.5 w-3.5 text-white/60 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 text-amber-400 animate-spin" />
                     ) : (
-                      <Check className="h-3.5 w-3.5 text-white/60" />
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
                     )}
                   </div>
-                  <span className="text-xs text-white/40">
+                  <span className={cn(
+                    "text-xs",
+                    message.role === 'user' ? "text-indigo-400/80" : 
+                    message.role === 'progress' ? "text-amber-400/80" : 
+                    "text-emerald-400/80"
+                  )}>
                     {message.role === 'user' ? 'Request' : 
                      message.role === 'progress' ? 'Processing' : 
                      'Update'}
@@ -582,7 +587,9 @@ export function ChatIslandDemo(): React.ReactElement {
                 {/* Message content */}
                 <div className={cn(
                   "text-sm leading-relaxed",
-                  message.role === 'user' ? "text-white/90" : "text-white/80"
+                  message.role === 'user' ? "text-indigo-50/90" : 
+                  message.role === 'progress' ? "text-amber-50/90" : 
+                  "text-emerald-50/90"
                 )}>
                   {message.content}
                 </div>
@@ -602,7 +609,11 @@ export function ChatIslandDemo(): React.ReactElement {
                           "w-full p-3 rounded-lg border transition-all duration-200",
                           "backdrop-blur-xl text-left group/action",
                           "hover:bg-white/[0.02]",
-                          action.isExpanded ? "border-white/[0.08] bg-white/[0.02]" : "border-white/[0.04]"
+                          action.isExpanded ? 
+                            action.status === 'loading' ? "border-amber-500/20 bg-amber-500/5" :
+                            action.status === 'complete' ? "border-emerald-500/20 bg-emerald-500/5" :
+                            "border-indigo-500/20 bg-indigo-500/5"
+                          : "border-white/[0.04]"
                         )}
                         whileHover={{ scale: 1.002 }}
                         whileTap={{ scale: 0.998 }}
@@ -610,31 +621,47 @@ export function ChatIslandDemo(): React.ReactElement {
                         <div className="flex items-start gap-3">
                           <div className={cn(
                             "mt-0.5 p-1.5 rounded-lg transition-colors",
-                            action.status === 'loading' ? "bg-white/[0.04]" : 
-                            action.status === 'complete' ? "bg-white/[0.04]" :
-                            "bg-white/[0.04]"
+                            action.status === 'loading' ? "bg-amber-500/10" :
+                            action.status === 'complete' ? "bg-emerald-500/10" :
+                            "bg-indigo-500/10"
                           )}>
                             {action.status === 'loading' ? (
-                              <Loader2 className="h-4 w-4 text-white/60 animate-spin" />
+                              <Loader2 className="h-4 w-4 text-amber-400 animate-spin" />
                             ) : action.status === 'complete' ? (
-                              <Check className="h-4 w-4 text-white/60" />
+                              <Check className="h-4 w-4 text-emerald-400" />
                             ) : (
-                              <Sparkles className="h-4 w-4 text-white/60" />
+                              <Sparkles className="h-4 w-4 text-indigo-400" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-white/90 group-hover/action:text-white">
+                              <span className={cn(
+                                "text-sm",
+                                action.status === 'loading' ? "text-amber-100/90" :
+                                action.status === 'complete' ? "text-emerald-100/90" :
+                                "text-indigo-100/90",
+                                "group-hover/action:text-white"
+                              )}>
                                 {action.text}
                               </span>
                               {action.command && (
-                                <code className="px-1.5 py-0.5 text-[10px] rounded bg-white/[0.04] text-white/40">
+                                <code className={cn(
+                                  "px-1.5 py-0.5 text-[10px] rounded",
+                                  action.status === 'loading' ? "bg-amber-500/10 text-amber-300/60" :
+                                  action.status === 'complete' ? "bg-emerald-500/10 text-emerald-300/60" :
+                                  "bg-indigo-500/10 text-indigo-300/60"
+                                )}>
                                   {action.command}
                                 </code>
                               )}
                             </div>
                             {action.description && (
-                              <p className="mt-0.5 text-xs text-white/40">
+                              <p className={cn(
+                                "mt-0.5 text-xs",
+                                action.status === 'loading' ? "text-amber-200/40" :
+                                action.status === 'complete' ? "text-emerald-200/40" :
+                                "text-indigo-200/40"
+                              )}>
                                 {action.description}
                               </p>
                             )}
