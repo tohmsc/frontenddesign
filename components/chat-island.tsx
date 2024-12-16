@@ -8,27 +8,7 @@ import { cn } from "@/lib/utils"
 import { create } from 'zustand'
 import { FamilyButton } from "@/components/ui/family-button"
 import { RainbowButton } from "@/components/ui/rainbow-button"
-
-function WindowsIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-label="Windows Icon"
-      role="img"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <rect x="3" y="3" width="6" height="6" rx="1" />
-      <rect x="15" y="3" width="6" height="6" rx="1" />
-      <rect x="3" y="15" width="6" height="6" rx="1" />
-      <rect x="15" y="15" width="6" height="6" rx="1" />
-    </svg>
-  )
-}
+import { ParticleLogo } from './particle-logo';
 
 interface StatusStore {
   status: string
@@ -99,9 +79,96 @@ const messageVariants: Variants = {
   }
 }
 
-function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactElement {
-  const [actions, setActions] = React.useState<Action[]>(message.actions || [])
+function ActionButton({ action, onClick }: { action: Action; onClick: () => void }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "rounded-xl border bg-black/40 backdrop-blur-xl overflow-hidden transition-all duration-200",
+        action.status === 'complete' ? "border-emerald-500/20" :
+        action.status === 'loading' ? "border-amber-500/20" :
+        "border-white/[0.08] hover:border-white/[0.12]",
+        action.isExpanded && "ring-1",
+        action.status === 'complete' ? "ring-emerald-500/20" :
+        action.status === 'loading' ? "ring-amber-500/20" :
+        "ring-white/[0.08]"
+      )}
+    >
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={onClick}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium",
+              action.status === 'complete' ? "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20" :
+              action.status === 'loading' ? "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20" :
+              "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20"
+            )}
+          >
+            {action.status === 'complete' && <Check className="h-4 w-4" />}
+            {action.status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
+            {action.status === 'ready' && <Sparkles className="h-4 w-4" />}
+            {action.text}
+          </button>
+        </div>
+      </div>
 
+      {action.isExpanded && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className={cn(
+            "border-t bg-black/60",
+            action.status === 'complete' ? "border-emerald-500/10" :
+            action.status === 'loading' ? "border-amber-500/10" :
+            "border-white/[0.04]"
+          )}
+        >
+          <div className="flex flex-col gap-1 p-3">
+            {action.description && (
+              <div className={cn(
+                "text-xs",
+                action.status === 'complete' ? "text-emerald-300/70" :
+                action.status === 'loading' ? "text-amber-300/70" :
+                "text-blue-300/70"
+              )}>
+                {action.description}
+              </div>
+            )}
+            {action.command && (
+              <div className="font-mono text-xs text-white/60">
+                <span className={cn(
+                  action.status === 'complete' ? "text-emerald-400/90" :
+                  action.status === 'loading' ? "text-amber-400/90" :
+                  "text-cyan-400/90"
+                )}>
+                  {action.command}
+                </span>
+              </div>
+            )}
+            {action.status === 'complete' && (
+              <div className="font-mono text-xs text-emerald-400/90 flex items-center gap-2">
+                <Check className="h-3 w-3" />
+                Operation completed
+              </div>
+            )}
+            {action.status === 'loading' && (
+              <div className="font-mono text-xs text-amber-400/90 flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Processing...
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactElement {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -140,6 +207,17 @@ function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactE
             <div className="text-sm font-medium text-white/90">
               {message.content}
             </div>
+            {message.actions && message.actions.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {message.actions.map((action) => (
+                  <ActionButton
+                    key={action.id}
+                    action={action}
+                    onClick={() => onActionClick?.(action.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -147,7 +225,7 @@ function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactE
       {message.role === 'progress' && (
         <div className="flex items-center gap-3">
           <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/30 border border-white/[0.05]">
-            <Settings2 className="h-5 w-5 text-cyan-400 animate-pulse" />
+            <Settings2 className="h-5 w-5 text-amber-400 animate-pulse" />
           </div>
           <div>
             <div className="text-sm font-medium text-white/90">
@@ -162,167 +240,7 @@ function ChatMessage({ message, onActionClick }: ChatMessageProps): React.ReactE
           {message.content}
         </div>
       )}
-
-      {message.actions && message.actions.length > 0 && (
-        <div className="mt-4 space-y-2 pl-[52px]">
-          {actions.map((action) => (
-            <motion.div 
-              key={action.id}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={cn(
-                "rounded-xl border border-white/[0.08] bg-black/40",
-                "backdrop-blur-xl",
-                "overflow-hidden",
-                "transition-all duration-200",
-                action.isExpanded && "ring-1 ring-white/[0.08]"
-              )}
-            >
-              <div className="p-4">
-                <div className="flex items-start gap-3">
-                  <RainbowButton
-                    onClick={() => onActionClick?.(action.id)}
-                    className="text-sm font-medium"
-                  >
-                    {action.text}
-                  </RainbowButton>
-                </div>
-              </div>
-
-              {action.isExpanded && action.command && (
-                <div className="border-t border-white/[0.04] bg-black/60">
-                  <div className="flex flex-col gap-1 p-3">
-                    <div className="font-mono text-xs text-white/60">
-                      <span className="text-cyan-400/90">{action.command}</span>
-                    </div>
-                    {action.status === 'complete' && (
-                      <div className="font-mono text-xs text-emerald-400/90">
-                        Operation completed
-                      </div>
-                    )}
-                    {action.status === 'loading' && (
-                      <div className="font-mono text-xs text-amber-400/90 flex items-center gap-2">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Processing...
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      )}
     </motion.div>
-  )
-}
-
-function ThoughtProcess({ thoughts, onComplete }: { thoughts: ThoughtNode[]; onComplete: () => void }) {
-  const [activeThought, setActiveThought] = React.useState(0);
-  const [isCompleting, setIsCompleting] = React.useState(false);
-  const [isExpanded, setIsExpanded] = React.useState(true);
-
-  React.useEffect(() => {
-    if (activeThought >= thoughts.length && !isCompleting && isExpanded) {
-      setIsCompleting(true);
-      setTimeout(() => {
-        onComplete();
-      }, 600);
-      return;
-    }
-
-    if (activeThought < thoughts.length && isExpanded) {
-      const timer = setTimeout(() => {
-        setActiveThought(prev => prev + 1);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [activeThought, thoughts.length, onComplete, isCompleting, isExpanded]);
-
-  return (
-    <div className="relative py-2">
-      {/* Collapse/Expand button */}
-      <button
-        type="button"
-        onClick={() => setIsExpanded(prev => !prev)}
-        className="absolute -top-1 -right-1 p-1.5 rounded-lg bg-blue-500/5 hover:bg-blue-500/10 transition-colors group"
-      >
-        <ChevronRight 
-          className={cn(
-            "h-4 w-4 text-blue-400/60 transition-transform duration-200",
-            isExpanded ? "rotate-90" : "rotate-0"
-          )}
-        />
-      </button>
-
-      <motion.div
-        animate={{ height: isExpanded ? "auto" : "2.5rem" }}
-        transition={{ duration: 0.2 }}
-        className="overflow-hidden"
-      >
-        {/* Main vertical line */}
-        <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-gradient-to-b from-blue-400/0 via-blue-400/10 to-blue-400/0">
-          <motion.div 
-            className="absolute top-0 left-0 w-full bg-gradient-to-b from-blue-400/30 via-blue-400/20 to-blue-400/10"
-            initial={{ height: 0 }}
-            animate={{ height: isExpanded ? `${(Math.min(activeThought + 1, thoughts.length) / thoughts.length) * 100}%` : "0%" }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-          />
-        </div>
-
-        <div className="space-y-5">
-          {thoughts.map((thought, index) => (
-            <motion.div
-              key={thought.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ 
-                opacity: !isExpanded ? (index === 0 ? 1 : 0) :
-                         index <= activeThought ? 1 : 0.3,
-                y: !isExpanded ? (index === 0 ? 0 : 8) :
-                   index <= activeThought ? 0 : 8,
-              }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="relative flex items-center"
-            >
-              {/* Horizontal connector */}
-              <div className="absolute left-3 w-3 h-[1px] bg-gradient-to-r from-blue-400/20 to-transparent" />
-              
-              {/* Dot with pulse */}
-              <div className="relative w-6 h-6 flex items-center justify-center">
-                <div className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-colors duration-300",
-                  index === activeThought ? "bg-blue-400" :
-                  index < activeThought ? "bg-blue-400/40" : 
-                  "bg-blue-400/20"
-                )} />
-                {index === activeThought && (
-                  <motion.div
-                    className="absolute inset-0 rounded-full bg-blue-400/30"
-                    animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
-                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
-                  />
-                )}
-              </div>
-
-              {/* Content */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: index <= activeThought ? 1 : 0.3 }}
-                transition={{ duration: 0.3 }}
-                className={cn(
-                  "flex-1 text-sm leading-relaxed pl-3",
-                  index === activeThought ? "text-blue-100/90" :
-                  index < activeThought ? "text-blue-100/70" :
-                  "text-blue-100/40"
-                )}
-              >
-                <span className="font-light">{thought.content}</span>
-              </motion.div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-    </div>
   );
 }
 
@@ -488,7 +406,7 @@ export function ChatIslandDemo(): React.ReactElement {
       setIsThinking(false);
       setCurrentAIStatus('waiting');
       setStatus('Ready');
-    }, 2000); // Increased timeout to allow for thought process animation
+    }, 4000); // Adjusted timing to match thought process duration
   }, [input, isThinking, setStatus, updateMessages]);
 
   const handleActionClick = React.useCallback((actionId: string) => {
@@ -559,7 +477,9 @@ export function ChatIslandDemo(): React.ReactElement {
     <div className="relative h-full flex flex-col bg-[#0C0C0D]">
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <WindowsIcon className="h-5 w-5 text-blue-400" />
+          <div className="relative w-[50px] h-[50px]">
+            <ParticleLogo />
+          </div>
           <span className="text-sm font-medium text-neutral-200">New Software</span>
           <AIStatusIndicator status={currentAIStatus} />
         </div>
@@ -783,4 +703,102 @@ export function ChatIslandDemo(): React.ReactElement {
       </div>
     </div>
   )
+}
+
+function ThoughtProcess({ thoughts, onComplete }: { thoughts: ThoughtNode[]; onComplete?: () => void }) {
+  const [activeThought, setActiveThought] = React.useState(0);
+  const [isCompleting, setIsCompleting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (activeThought >= thoughts.length && !isCompleting) {
+      setIsCompleting(true);
+      return;
+    }
+
+    if (activeThought < thoughts.length) {
+      const timer = setTimeout(() => {
+        setActiveThought(prev => prev + 1);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [activeThought, thoughts, thoughts.length, isCompleting]);
+
+  return (
+    <div className="relative py-2">
+      {/* Main vertical line */}
+      <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-gradient-to-b from-blue-400/0 via-blue-400/10 to-blue-400/0">
+        <motion.div 
+          className="absolute top-0 left-0 w-full bg-gradient-to-b from-blue-400/30 via-blue-400/20 to-blue-400/10"
+          initial={{ height: 0 }}
+          animate={{ height: `${(Math.min(activeThought + 1, thoughts.length) / thoughts.length) * 100}%` }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="space-y-5">
+        {thoughts.map((thought, index) => (
+          <motion.div
+            key={thought.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ 
+              opacity: index <= activeThought ? 1 : 0.3,
+              y: index <= activeThought ? 0 : 8
+            }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative flex items-center group"
+          >
+            {/* Horizontal connector */}
+            <div className="absolute left-3 w-3 h-[1px] bg-gradient-to-r from-blue-400/20 to-transparent" />
+            
+            {/* Dot with pulse */}
+            <div className="relative w-6 h-6 flex items-center justify-center">
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full transition-colors duration-300",
+                index === activeThought ? "bg-blue-400" :
+                index < activeThought ? "bg-blue-400/40" : 
+                "bg-blue-400/20"
+              )} />
+              {index === activeThought && (
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-blue-400/30"
+                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
+                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
+                />
+              )}
+            </div>
+
+            {/* Content */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: index <= activeThought ? 1 : 0.3 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "flex-1 text-sm leading-relaxed pl-3",
+                index === activeThought ? "text-blue-100/90" :
+                index < activeThought ? "text-blue-100/70" :
+                "text-blue-100/40"
+              )}
+            >
+              <span className="font-light">{thought.content}</span>
+              <div className="flex items-center gap-2 text-xs text-blue-400/40 mt-1">
+                <div className="h-1 w-1 rounded-full bg-blue-400/40" />
+                <span>{thought.thoughtType}</span>
+              </div>
+            </motion.div>
+
+            {/* Completion indicator */}
+            {index < activeThought && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute -right-1 top-1/2 -translate-y-1/2 text-emerald-400"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </motion.div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
 }
