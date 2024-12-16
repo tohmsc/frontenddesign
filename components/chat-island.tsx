@@ -724,78 +724,80 @@ function ThoughtProcess({ thoughts, onComplete }: { thoughts: ThoughtNode[]; onC
   }, [activeThought, thoughts, thoughts.length, isCompleting]);
 
   return (
-    <div className="relative py-2">
-      {/* Main vertical line */}
-      <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-gradient-to-b from-blue-400/0 via-blue-400/10 to-blue-400/0">
-        <motion.div 
-          className="absolute top-0 left-0 w-full bg-gradient-to-b from-blue-400/30 via-blue-400/20 to-blue-400/10"
-          initial={{ height: 0 }}
-          animate={{ height: `${(Math.min(activeThought + 1, thoughts.length) / thoughts.length) * 100}%` }}
+    <div className="relative py-4">
+      {/* Progress bar */}
+      <div className="absolute left-0 right-0 top-0 h-[2px] bg-gradient-to-r from-blue-500/5 via-blue-500/10 to-blue-500/5">
+        <motion.div
+          className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 via-blue-500/80 to-blue-500/60"
+          initial={{ width: 0 }}
+          animate={{ width: `${(Math.min(activeThought + 1, thoughts.length) / thoughts.length) * 100}%` }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
         />
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-3 mt-4">
         {thoughts.map((thought, index) => (
           <motion.div
             key={thought.id}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ 
-              opacity: index <= activeThought ? 1 : 0.3,
-              y: index <= activeThought ? 0 : 8
+              opacity: index <= activeThought ? 1 : 0.4,
+              y: 0
             }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="relative flex items-center group"
+            className={cn(
+              "flex items-start gap-3 px-3 py-2 rounded-lg transition-all",
+              index === activeThought && "bg-gradient-to-r from-blue-500/[0.08] to-transparent",
+              index < activeThought && "opacity-80"
+            )}
           >
-            {/* Horizontal connector */}
-            <div className="absolute left-3 w-3 h-[1px] bg-gradient-to-r from-blue-400/20 to-transparent" />
-            
-            {/* Dot with pulse */}
-            <div className="relative w-6 h-6 flex items-center justify-center">
-              <div className={cn(
-                "w-1.5 h-1.5 rounded-full transition-colors duration-300",
-                index === activeThought ? "bg-blue-400" :
-                index < activeThought ? "bg-blue-400/40" : 
-                "bg-blue-400/20"
-              )} />
-              {index === activeThought && (
+            {/* Status icon */}
+            <div className="relative flex h-5 w-5 shrink-0 items-center justify-center mt-0.5">
+              {index === activeThought ? (
                 <motion.div
-                  className="absolute inset-0 rounded-full bg-blue-400/30"
-                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
-                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  className="absolute inset-0 rounded-full border border-blue-500/30"
+                >
+                  <motion.div 
+                    className="absolute inset-0 rounded-full border border-blue-500"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
+                </motion.div>
+              ) : index < activeThought ? (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="h-2 w-2 rounded-full bg-blue-500"
                 />
+              ) : (
+                <div className="h-2 w-2 rounded-full bg-blue-500/20" />
               )}
             </div>
 
             {/* Content */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: index <= activeThought ? 1 : 0.3 }}
-              transition={{ duration: 0.3 }}
-              className={cn(
-                "flex-1 text-sm leading-relaxed pl-3",
-                index === activeThought ? "text-blue-100/90" :
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className={cn(
+                "text-sm font-light tracking-wide",
+                index === activeThought ? "text-blue-50" :
                 index < activeThought ? "text-blue-100/70" :
                 "text-blue-100/40"
-              )}
-            >
-              <span className="font-light">{thought.content}</span>
-              <div className="flex items-center gap-2 text-xs text-blue-400/40 mt-1">
-                <div className="h-1 w-1 rounded-full bg-blue-400/40" />
-                <span>{thought.thoughtType}</span>
+              )}>
+                {thought.content}
               </div>
-            </motion.div>
-
-            {/* Completion indicator */}
-            {index < activeThought && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute -right-1 top-1/2 -translate-y-1/2 text-emerald-400"
-              >
-                <Check className="h-3.5 w-3.5" />
-              </motion.div>
-            )}
+              {index <= activeThought && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-2"
+                >
+                  <div className="text-[10px] uppercase tracking-wider text-blue-500/60 font-medium">
+                    {thought.thoughtType}
+                  </div>
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         ))}
       </div>
